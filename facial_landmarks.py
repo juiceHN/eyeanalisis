@@ -1,58 +1,74 @@
-# USAGE
-# python facial_landmarks.py --shape-predictor shape_predictor_68_face_landmarks.dat --image images/example_01.jpg 
-
-# import the necessary packages
 from imutils import face_utils
 import numpy as np
 import argparse
 import imutils
 import dlib
 import cv2
+import os
+import xlwt as xw
+import xlrd as xr
+from xlutils.copy import copy as x_copy
 
-# construct the argument parser and parse the arguments
-ap = argparse.ArgumentParser()
-ap.add_argument("-p", "--shape-predictor", required=True,
-	help="path to facial landmark predictor")
-ap.add_argument("-i", "--image", required=True,
-	help="path to input image")
-args = vars(ap.parse_args())
+shapePredictor = "shape_predictor_68_face_landmarks.dat"
 
-# initialize dlib's face detector (HOG-based) and then create
-# the facial landmark predictor
-detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor(args["shape_predictor"])
+def getEyes(in_image):
+	detector = dlib.get_frontal_face_detector()
+	predictor = dlib.shape_predictor(shapePredictor)
+	image = cv2.imread(in_image)
+	image = imutils.resize(image, width=500)
+	gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+	rects = detector(gray, 1)
 
-# load the input image, resize it, and convert it to grayscale
-image = cv2.imread(args["image"])
-image = imutils.resize(image, width=500)
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+	for (i, rect) in enumerate(rects):
+		shape = predictor(gray, rect)
+		shape = face_utils.shape_to_np(shape)
 
-# detect faces in the grayscale image
-rects = detector(gray, 1)
+	left_eye_x, left_eye_y, right_eye_x, right_eye_y = [], [], [], []
+	for i in range(6):
+		left_eye_x.append(shape[36+i][0])
+		left_eye_y.append(shape[36+i][1])
+		right_eye_x.append(shape[42+i][0])
+		right_eye_y.append(shape[42+i][1])
 
-# loop over the face detections
-for (i, rect) in enumerate(rects):
-	# determine the facial landmarks for the face region, then
-	# convert the facial landmark (x, y)-coordinates to a NumPy
-	# array
-	shape = predictor(gray, rect)
-	shape = face_utils.shape_to_np(shape)
+	return left_eye_x, left_eye_y, right_eye_x, right_eye_y
 
-	# convert dlib's rectangle to a OpenCV-style bounding box
-	# [i.e., (x, y, w, h)], then draw the face bounding box
-	(x, y, w, h) = face_utils.rect_to_bb(rect)
-	cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-	# show the face number
-	cv2.putText(image, "Face #{}".format(i + 1), (x - 10, y - 10),
-		cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+def writeData(subject_code):
+	url = './'+subject_code+'V'
+	path, dirs, files = os.walk(url).__next__()
+	file_count = len(files)
+	openfile = xr.open_workbook('data.xls', formatting_info=True)
+	excel_copy = x_copy(openfile)
+	sheet = excel_copy.add_sheet(subject_code)
+	for i in range(file_count):
+		img = url+'/'+subject_code+'V'+str(i)+'.jpg'
+		print(img)
+		try:
+			left_eye_x, left_eye_y, right_eye_x, right_eye_y = getEyes(img)
+		except:
+			left_eye_x, left_eye_y, right_eye_x, right_eye_y =[0,0,0,0,0,0], [0,0,0,0,0,0], [0,0,0,0,0,0],[0,0,0,0,0,0]
+			print('error in file: ', str(i))
+		for j in range(6):
+			col = j * 4
+			a = str(left_eye_x[j])
+			b = str(left_eye_y[j])
+			c = str(right_eye_x[j])
+			d = str(right_eye_y[j])
+			sheet.write(1+i,col+1,a)
+			sheet.write(1+i,col+2,b)
+			sheet.write(1+i,col+3,c)
+			sheet.write(1+i,col+4,d)
 
-	# loop over the (x, y)-coordinates for the facial landmarks
-	# and draw them on the image
-	for (x, y) in shape:
-		cv2.circle(image, (x, y), 1, (0, 0, 255), -1)
 
-cv2.circle(image, (192, 169), 1, (255, 255, 255), -1)
-# show the output image with the face detections + facial landmarks
-cv2.imwrite("Output_1.png", image)
-print(shape)
+
+
+	excel_copy.save('data.xls')
+
+
+
+
+#left_eye_x, left_eye_y, right_eye_x, right_eye_y = getEyes("./images/example_01.jpg")
+#writeData('E031M')
+codes = ['A001']
+for code in codes:
+	writeData(code)
