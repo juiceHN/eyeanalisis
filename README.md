@@ -19,11 +19,27 @@ Use Blinks.py to get data from a video. It will detect when someone is  blinking
 ```
 python3 blinks.py
 ```
+Once it starts running you need to write down the subject's sex. While running you can press down `q` to quit or `ctrl+c` to cancel.
+
+#### Aditional information
+
+You may need to change
+* `EYE_AR_THRESH` to adjust necesities for the size of the eye. It's recommended to use any value from 0.27 to 0.3.
+* `EYE_AR_CONSEC_FRAMES` to adjust how many frames does the eye needs to be closed to be count as a blink. It's recommended to use 3 as the value.
 
 -----
 ### Results
 
-After the analisis of the video is done it will create 2 csv files: 'eye_behavior.csv' and 'eye_behavior_summary.csv'. 'eye_behavior.csv' contains the following data:
+After the analisis of the video is done it will create 2 csv files: 'eye_behavior.csv' and 'eye_behavior_summary.csv'. 
+
+'eye_behavior.csv' contains the following data:
 1. Name of the video 
 2. The second in which a blink was detected
 3. A conbination of a direction and the second for eye movement
+
+'eye_behavior_summary.csv' contains the following data:
+1. Name of the video
+2. Number of frames in the video
+3. Number of blinks detected
+4. Number of eye movements made
+5. Sex
